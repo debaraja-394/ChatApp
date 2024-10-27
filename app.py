@@ -1,5 +1,5 @@
 from flask import Flask,render_template,request,redirect,url_for
-from flask_socketio import SocketIO,join_room
+from flask_socketio import SocketIO,join_room,leave_room
 
 app=Flask(__name__)
 socketio=SocketIO(app)
@@ -19,10 +19,16 @@ def home():
     return render_template("index.html")
 
 @socketio.on('join_room')
-def handleEvent(data):
+def handleEventJoin(data):
     app.logger.info("{} is the username and room is: {}".format(data['username'],data['roomID']))
     join_room(data['roomID'])
     socketio.emit('join_room_announcement',data,room=data['roomID'])
+
+@socketio.on('leave_room')
+def handleEventLeave(data):
+    app.logger.info("{} is the username and room is: {}".format(data['username'],data['roomID']))
+    leave_room(data['roomID'])
+    socketio.emit('leave_room_announcement',data,room=data['roomID'])
 
 @socketio.on('send_message')
 def handle_send_message(data):
