@@ -1,9 +1,15 @@
 from flask import Flask,render_template,request,redirect,url_for
 from flask_socketio import SocketIO,join_room,leave_room
+from flask_login import LoginManager, login_user
+from ChatApp import db
+from users import User
 
 app=Flask(__name__)
 socketio=SocketIO(app)
 port=5000
+login_manager=LoginManager()
+login_manager.init_app(app)
+
 @app.route('/',methods=['GET','POST'])
 def home():
     if request.method=='POST':
@@ -17,6 +23,25 @@ def home():
             redirect(url_for('home'))
 
     return render_template("index.html")
+
+@login_manager.user_loader
+def load_user(username):
+    return db.get_user(username)
+
+@app.route('/login',methods=['GET','POST'])
+def login():
+    if request.method=='POST':
+        message=""
+        username=request.form['username']
+        password=request.form['password']
+        user=db.get_user(username)
+        if user and User.check_password(password):
+            login_user(user)
+            return redirect(url_for('home'))
+        else:
+            message="Failed to Login !!"
+    return render_template('login.html',message=message)
+
 
 @socketio.on('join_room')
 def handleEventJoin(data):
@@ -37,8 +62,6 @@ def handle_send_message(data):
 
 @app.route('/chat',methods=['POST','GET'])
 def chat():
-    # username=request.args.get('username')
-    # roomID=request.args.get('roomID')
     return render_template('chat.html')
 
 if __name__=='__main__':
